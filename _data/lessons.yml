@@ -1,0 +1,16 @@
+- name: Hosting
+  status: To Do
+- name: Databases
+  status: WIP
+- name: CRON and Queue Jobs
+  status: To Do
+- name: Backend Applications
+  status: To Do
+- name: API Design
+  status: To Do
+- name: Frontend Applications
+  status: To Do
+- name: UI/UX
+  status: To Do
+- name: Planning Work
+  status: To Do

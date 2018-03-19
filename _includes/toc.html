@@ -1,0 +1,15 @@
+<div>
+  <h4><a href="/">Home</a></h4>
+  <h4>Lessons</h4>
+  <ul>
+    {% for lesson in site.data.lessons %}
+      <li class=""><a href="/lessons/{{lesson.name | slugify}}/">{{lesson.name}} ({{lesson.status}})</a></li>
+    {% endfor %}
+  </ul>
+  <h4>Tutees</h4>
+  <ul>
+    {% for lesson in site.data.lessons %}
+      <li class=""><a href="/tutees/{{lesson.name | slugify}}/">{{lesson.name}} ({{lesson.status}})</a></li>
+    {% endfor %}
+  </ul>
+</div>

@@ -1,0 +1,58 @@
+---
+layout: default
+title: Database Tutee
+---
+
+<h1>Database Tutee</h1>
+
+<form>
+  {% for question in site.data.questions.databases %}
+    <div>
+      <p>{{forloop.index}}. {{question.text}}</p>
+      <input type="radio" id="{{forloop.index}}_t" name="{{forloop.index}}" value="true" required>
+      <label for="a_t">T</label>
+      <input type="radio" id="{{forloop.index}}_f" name="{{forloop.index}}" value="false" required>
+      <label for="a_f">F</label>
+    </div>
+    <br>
+  {% endfor %}
+  <div>
+    <button type="submit">Check</button>
+  </div>
+  <br>
+</form>
+
+<hr>
+
+<pre id="output">
+</pre>
+
+<script>
+  var form = document.querySelector("form");
+  var output = document.querySelector("#output");
+
+  var expected = {};
+  {% for question in site.data.questions.databases %}
+    expected[{{forloop.index}}] = {{question.value}};
+  {% endfor %}
+
+  form.addEventListener("submit", function(event) {
+    var data = new FormData(form);
+    var out = "";
+    var errors = [];
+
+    for (var entry of data) {
+      if (entry[1] !== expected[entry[0]].toString()) {
+        errors.push(entry[0]);
+      }
+      if (errors.length) {
+        out = "Check: #" + errors.join(", #");
+      } else {
+        out = "Correct!";
+      }
+    };
+
+    output.innerText = out;
+    event.preventDefault();
+  }, false);
+</script>
