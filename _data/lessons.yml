@@ -2,7 +2,7 @@
   status: To Do
 - name: Databases
   status: WIP
-- name: CRON and Queue Jobs
+- name: Task Scheduling
   status: To Do
 - name: Backend Applications
   status: To Do
@@ -12,5 +12,5 @@
   status: To Do
 - name: UI/UX
   status: To Do
-- name: Planning Work
+- name: Project Management
   status: To Do
