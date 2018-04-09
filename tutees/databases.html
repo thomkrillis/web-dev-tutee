@@ -5,7 +5,15 @@ title: Database Tutee
 
 <h1>Database Tutee</h1>
 
-<form>
+<div id="chat"></div>
+
+<form id="chatReply">
+  <label>Reply:</label>
+  <input type="text" name="reply" id="reply">
+  <input type="submit" value="Submit">
+</form>
+
+<form id="radioQuestions">
   {% for question in site.data.questions.databases %}
     <div>
       <p>{{forloop.index}}. {{question.text}}</p>
@@ -27,8 +35,183 @@ title: Database Tutee
 <pre id="output">
 </pre>
 
+<style>
+#chat {
+  width: 400px;
+  min-height: 300px;
+  background-color: #999;
+  margin-bottom: 15px;
+  padding: 5px;
+}
+
+.message-container {
+  width: 100%;
+}
+
+.message {
+  max-width: 150px;
+  background-color: #DDD;
+  margin: 5px;
+  padding: 5px;
+}
+
+.bot-message {
+  color: green;
+}
+
+.user-message {
+  color: brown;
+  margin-left: auto;
+}
+
+#chatReply {
+  width: 400px;
+  text-align: right;
+}
+</style>
+
 <script>
-  var form = document.querySelector("form");
+  // Get tutee questions as JS from YML
+  var getQuestions = function() {
+    var questions = [];
+    {% for question in site.data.questions.databases %}
+      questions.push({
+        text: "{{question.text}}",
+        value: {{question.value}}
+      });
+    {% endfor %}
+    return questions;
+  };
+
+  // Appends a message to the chat window
+  var addToChat = function(text, user = false) {
+    var message = document.createElement("DIV");
+    message.className = 'message ';
+    message.className += user ? 'user-message ' : 'bot-message ';
+
+    var messageText = document.createTextNode(text);
+    message.appendChild(messageText);
+
+    var messageContainer = document.createElement("DIV");
+    messageContainer.className = 'message-container ';
+    messageContainer.appendChild(message);
+
+    var chat = document.querySelector("#chat");
+    chat.appendChild(messageContainer);
+  };
+
+  var addNextQuestion = function() {
+    if (QUESTION_INDEX >= questions.length) {
+      addToChat('We\'ve gone through everything. Let\'s start from the beginning.');
+      QUESTION_INDEX = 0;
+      addNextQuestion();
+      return;
+    }
+    addToChat('Is this right? ' + questions[QUESTION_INDEX].text);
+    QUESTION_INDEX++;
+  };
+
+  var checkNegative = function(text) {
+    var negatives = [
+      'wrong',
+      'don\'t',
+      'incorrect',
+      'bad',
+      'false',
+      'no'
+    ];
+
+    for (var negative of negatives) {
+      if (text.includes(negative)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  var checkPositive = function(text) {
+    var positives = [
+      'right',
+      'sure',
+      'think so',
+      'correct',
+      'good',
+      'true',
+      'yes'
+    ];
+
+    for (var positive of positives) {
+      if (text.includes(positive)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  // Handle bot response
+  var handleBotResponse = function(response) {
+    var filteredResponse = response.replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase();
+    var negative = checkNegative(filteredResponse);
+    var positive = checkPositive(filteredResponse);
+
+    // User responded positively
+    if (!negative && positive) {
+      if (questions[QUESTION_INDEX - 1].value) {
+        addToChat('That seems right!');
+      } else {
+        addToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
+      }
+
+      addNextQuestion(QUESTION_INDEX);
+      return;
+    }
+
+    // User responded negatively
+    if (negative && !positive) {
+      if (!questions[QUESTION_INDEX - 1].value) {
+        addToChat('Oh, I think you\'re right!');
+      } else {
+        addToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
+      }
+
+      addNextQuestion(QUESTION_INDEX);
+      return;
+    }
+
+    // Unclear response from user
+    addToChat('I\'m not sure if you think I was right or wrong. What do you think?');
+  };
+</script>
+
+<script>
+  var form = document.querySelector("#chatReply");
+  var reply = document.querySelector("#reply");
+
+  var questions = getQuestions();
+  var QUESTION_INDEX = 0;
+
+  addNextQuestion();
+  reply.focus();
+
+  // Handles user input submissions
+  form.addEventListener("submit", function(event) {
+    var user = true;
+    addToChat(reply.value, user);
+
+    handleBotResponse(reply.value);
+
+    reply.value = '';
+    reply.blur();
+    reply.focus();
+
+    event.preventDefault();
+  }, false);
+</script>
+
+<script>
+  var form = document.querySelector("#radioQuestions");
   var output = document.querySelector("#output");
 
   var expected = {};
