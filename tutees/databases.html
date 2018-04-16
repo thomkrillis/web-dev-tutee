@@ -5,6 +5,13 @@ title: Database Tutee
 
 <h1>Database Tutee</h1>
 
+<div>
+  <h2>Instructions</h2>
+  <p>Let the tutee know if their claims are correct by providing a positive or negative affirmation (e.g. "right" or "wrong").</p>
+  <p>You may skip to a random question (e.g. "random"), or you may request to skip to the next question if you like (e.g. "pass").</p>
+  <p>If you need to review the material related to the question, you can ask for a link to the content (e.g. "link").</p>
+</div>
+
 <div id="chat"></div>
 
 <form id="chatReply">
@@ -77,14 +84,15 @@ title: Database Tutee
     {% for question in site.data.questions.databases %}
       questions.push({
         text: "{{question.text}}",
-        value: {{question.value}}
+        value: {{question.value}},
+        content: "{{question.content}}"
       });
     {% endfor %}
     return questions;
   };
 
   // Appends a message to the chat window
-  var addToChat = function(text, user = false) {
+  var addTextToChat = function(text, user = false) {
     var message = document.createElement("DIV");
     message.className = 'message ';
     message.className += user ? 'user-message ' : 'bot-message ';
@@ -100,15 +108,86 @@ title: Database Tutee
     chat.appendChild(messageContainer);
   };
 
+  // Appends a link message to the chat window
+  var addLinkToChat = function(link, text) {
+    var message = document.createElement("DIV");
+    message.className = 'message ';
+    message.className += 'bot-message ';
+
+    var messageLink = document.createElement('a');
+    messageLink.href = link;
+    messageLink.title = text;
+    messageLink.target = '_blank';
+    linkText = text.split('-').map(function capitalize(part) {
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    }).join(' ');
+    messageLink.appendChild(document.createTextNode(linkText));
+    message.appendChild(messageLink);
+
+    var messageContainer = document.createElement("DIV");
+    messageContainer.className = 'message-container ';
+    messageContainer.appendChild(message);
+
+    var chat = document.querySelector("#chat");
+    chat.appendChild(messageContainer);
+  };
+
   var addNextQuestion = function() {
     if (QUESTION_INDEX >= questions.length) {
-      addToChat('We\'ve gone through everything. Let\'s start from the beginning.');
+      addTextToChat('We\'ve gone through everything. Let\'s start from the beginning.');
       QUESTION_INDEX = 0;
       addNextQuestion();
       return;
     }
-    addToChat('Is this right? ' + questions[QUESTION_INDEX].text);
+    addTextToChat('Is this right? ' + questions[QUESTION_INDEX].text);
     QUESTION_INDEX++;
+  };
+
+  var checkRandom = function(text) {
+    var randoms = [
+      'random',
+      'arbitrary'
+    ];
+
+    for (var random of randoms) {
+      if (text.includes(random)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  var checkLink = function(text) {
+    var links = [
+      'link',
+      'help',
+      'content'
+    ];
+
+    for (var link of links) {
+      if (text.includes(link)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  var checkSkip = function(text) {
+    var skips = [
+      'skip',
+      'next',
+      'pass'
+    ];
+
+    for (var skip of skips) {
+      if (text.includes(skip)) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   var checkNegative = function(text) {
@@ -153,15 +232,42 @@ title: Database Tutee
   // Handle bot response
   var handleBotResponse = function(response) {
     var filteredResponse = response.replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase();
+    var link = checkLink(filteredResponse);
+    var random = checkRandom(filteredResponse);
+    var skip = checkSkip(filteredResponse);
     var negative = checkNegative(filteredResponse);
     var positive = checkPositive(filteredResponse);
+
+    // User wants a link to the relevant content
+    if (link) {
+      addTextToChat('Okay, here\'s a link to the relevant content:');
+      var contentIndex = QUESTION_INDEX - 1 < 0 ? questions.length - 1 : QUESTION_INDEX - 1;
+      var content = questions[contentIndex].content;
+      addLinkToChat('{{site.baseurl}}/lessons/databases#' + content, content);
+      return;
+    }
+
+    // User wants to skip the question for a random one
+    if (random) {
+      addTextToChat('Okay, let\'s skip that one right now and do a random one.');
+      QUESTION_INDEX = Math.floor(Math.random() * Math.floor(questions.length));
+      addNextQuestion(QUESTION_INDEX);
+      return;
+    }
+
+    // User wants to skip the question
+    if (skip) {
+      addTextToChat('Okay, let\'s skip that one right now.');
+      addNextQuestion(QUESTION_INDEX);
+      return;
+    }
 
     // User responded positively
     if (!negative && positive) {
       if (questions[QUESTION_INDEX - 1].value) {
-        addToChat('That seems right!');
+        addTextToChat('That seems right!');
       } else {
-        addToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
+        addTextToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
       }
 
       addNextQuestion(QUESTION_INDEX);
@@ -171,9 +277,9 @@ title: Database Tutee
     // User responded negatively
     if (negative && !positive) {
       if (!questions[QUESTION_INDEX - 1].value) {
-        addToChat('Oh, I think you\'re right!');
+        addTextToChat('Oh, I think you\'re right!');
       } else {
-        addToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
+        addTextToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
       }
 
       addNextQuestion(QUESTION_INDEX);
@@ -181,7 +287,7 @@ title: Database Tutee
     }
 
     // Unclear response from user
-    addToChat('I\'m not sure if you think I was right or wrong. What do you think?');
+    addTextToChat('I\'m not sure if you think I was right or wrong. What do you think?');
   };
 </script>
 
@@ -198,7 +304,7 @@ title: Database Tutee
   // Handles user input submissions
   form.addEventListener("submit", function(event) {
     var user = true;
-    addToChat(reply.value, user);
+    addTextToChat(reply.value, user);
 
     handleBotResponse(reply.value);
 
