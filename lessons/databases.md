@@ -3,6 +3,10 @@ layout: default
 title: Databases
 ---
 
+#### Lesson Contents
+* TOC
+{:toc}
+
 # Databases
 
 ## What are databases?
