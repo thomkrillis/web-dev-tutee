@@ -8,7 +8,7 @@ title: Database Tutee
 <div>
   <h2>Instructions</h2>
   <p>Let the tutee know if their claims are correct by providing a positive or negative affirmation (e.g. "right" or "wrong").</p>
-  <p>You may skip to a random question (e.g. "random"), or you may request to skip to the next question if you like (e.g. "pass").</p>
+  <p>You may skip to a random question (e.g. "random"), or you may request to skip to the next sequential question if you like (e.g. "next").</p>
   <p>If you need to review the material related to the question, you can ask for a link to the content (e.g. "link").</p>
 </div>
 
@@ -78,6 +78,11 @@ title: Database Tutee
 </style>
 
 <script>
+  var maxWeight = 1000;
+  var minWeight = 1;
+  var decayWeight = 0.2;
+  var deltaWeight = decayWeight * (maxWeight - minWeight);
+
   // Get tutee questions as JS from YML
   var getQuestions = function() {
     var questions = [];
@@ -85,10 +90,40 @@ title: Database Tutee
       questions.push({
         text: "{{question.text}}",
         value: {{question.value}},
-        content: "{{question.content}}"
+        content: "{{question.content}}",
+        weight: (maxWeight - minWeight) / 2
       });
     {% endfor %}
     return questions;
+  };
+
+  var getCurrentIndex = function() {
+    return QUESTION_INDEX - 1 < 0 ? questions.length - 1 : QUESTION_INDEX - 1;
+  };
+
+  var getNextQuestion = function() {
+    return QUESTION_INDEX;
+  };
+
+  var getRandomQuestion = function() {
+    const weightSum = questions.reduce(function(total, question) {
+      return total + question.weight;
+    }, 0);
+    let random = Math.floor(Math.random() * (weightSum + 1));
+    return questions.findIndex(function(question) {
+      random -= question.weight;
+      return random <= 0;
+    });
+  };
+
+  var decreaseWeight = function() {
+    const newWeight = questions[getCurrentIndex()].weight - 10;
+    questions[getCurrentIndex()].weight = newWeight < minWeight ? minWeight : newWeight;
+  };
+
+  var increaseWeight = function() {
+    const newWeight = questions[getCurrentIndex()].weight + deltaWeight;
+    questions[getCurrentIndex()].weight = newWeight > maxWeight ? maxWeight : newWeight;
   };
 
   // Appends a message to the chat window
@@ -134,7 +169,6 @@ title: Database Tutee
 
   var addNextQuestion = function() {
     if (QUESTION_INDEX >= questions.length) {
-      addTextToChat('We\'ve gone through everything. Let\'s start from the beginning.');
       QUESTION_INDEX = 0;
       addNextQuestion();
       return;
@@ -146,6 +180,7 @@ title: Database Tutee
   var checkRandom = function(text) {
     var randoms = [
       'random',
+      'another',
       'arbitrary'
     ];
 
@@ -241,8 +276,7 @@ title: Database Tutee
     // User wants a link to the relevant content
     if (link) {
       addTextToChat('Okay, here\'s a link to the relevant content:');
-      var contentIndex = QUESTION_INDEX - 1 < 0 ? questions.length - 1 : QUESTION_INDEX - 1;
-      var content = questions[contentIndex].content;
+      var content = questions[getCurrentIndex()].content;
       addLinkToChat('{{site.baseurl}}/lessons/databases#' + content, content);
       return;
     }
@@ -250,26 +284,30 @@ title: Database Tutee
     // User wants to skip the question for a random one
     if (random) {
       addTextToChat('Okay, let\'s skip that one right now and do a random one.');
-      QUESTION_INDEX = Math.floor(Math.random() * Math.floor(questions.length));
+      QUESTION_INDEX = getRandomQuestion();
       addNextQuestion(QUESTION_INDEX);
       return;
     }
 
-    // User wants to skip the question
+    // User wants to skip the question for the next sequential one
     if (skip) {
-      addTextToChat('Okay, let\'s skip that one right now.');
+      addTextToChat('Okay, let\'s skip that one right now for the next sequential one.');
+      QUESTION_INDEX = getNextQuestion();
       addNextQuestion(QUESTION_INDEX);
       return;
     }
 
     // User responded positively
     if (!negative && positive) {
-      if (questions[QUESTION_INDEX - 1].value) {
+      if (questions[getCurrentIndex()].value) {
         addTextToChat('That seems right!');
+        decreaseWeight();
       } else {
         addTextToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
+        increaseWeight();
       }
 
+      QUESTION_INDEX = getRandomQuestion();
       addNextQuestion(QUESTION_INDEX);
       return;
     }
@@ -278,10 +316,13 @@ title: Database Tutee
     if (negative && !positive) {
       if (!questions[QUESTION_INDEX - 1].value) {
         addTextToChat('Oh, I think you\'re right!');
+        increaseWeight();
       } else {
         addTextToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
+        decreaseWeight();
       }
 
+      QUESTION_INDEX = getRandomQuestion();
       addNextQuestion(QUESTION_INDEX);
       return;
     }
@@ -296,9 +337,8 @@ title: Database Tutee
   var reply = document.querySelector("#reply");
 
   var questions = getQuestions();
-  var QUESTION_INDEX = 0;
-
-  addNextQuestion();
+  var QUESTION_INDEX = getRandomQuestion();
+  addNextQuestion(QUESTION_INDEX);
   reply.focus();
 
   // Handles user input submissions
