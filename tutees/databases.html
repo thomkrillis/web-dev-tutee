@@ -314,10 +314,14 @@ title: Database Tutee
           });
         });
       });
-      addTextToChat('Okay, let\'s skip that one right now and do one with a tag matching: ' + matchingTags.join('; '));
-      decreaseWeight();
-      QUESTION_INDEX = getRandomQuestion(tagQuestions);
-      addNextQuestion(false);
+      if (tagQuestions.length) {
+        addTextToChat('Okay, let\'s skip that one right now and do one with a tag matching: ' + matchingTags.join('; '));
+        decreaseWeight();
+        QUESTION_INDEX = getRandomQuestion(tagQuestions);
+        addNextQuestion(false);
+      } else {
+        addTextToChat('I could\'t find a question for that tag. Please try again.');
+      }
       return;
     }
 
