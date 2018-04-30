@@ -81,7 +81,7 @@ title: Database Tutee
 <script>
   var maxWeight = 1000;
   var minWeight = 1;
-  var decayWeight = 0.2;
+  var decayWeight = 0.1;
   var deltaWeight = decayWeight * (maxWeight - minWeight);
 
   // Get tutee questions as JS from YML
@@ -120,13 +120,13 @@ title: Database Tutee
     return questionGroup[randomIndex].index;
   };
 
-  var decreaseWeight = function() {
-    const newWeight = questions[getCurrentIndex()].weight - 10;
+  var decreaseWeight = function(x = 1) {
+    const newWeight = questions[getCurrentIndex()].weight - x * deltaWeight;
     questions[getCurrentIndex()].weight = newWeight < minWeight ? minWeight : newWeight;
   };
 
-  var increaseWeight = function() {
-    const newWeight = questions[getCurrentIndex()].weight + deltaWeight;
+  var increaseWeight = function(x = 1) {
+    const newWeight = questions[getCurrentIndex()].weight + x * deltaWeight;
     questions[getCurrentIndex()].weight = newWeight > maxWeight ? maxWeight : newWeight;
   };
 
@@ -177,7 +177,7 @@ title: Database Tutee
     }
     if (QUESTION_INDEX >= questions.length) {
       QUESTION_INDEX = 0;
-      addNextQuestion();
+      addNextQuestion(false);
       return;
     }
     addTextToChat('Is this right? ' + questions[QUESTION_INDEX].text);
@@ -315,6 +315,7 @@ title: Database Tutee
         });
       });
       addTextToChat('Okay, let\'s skip that one right now and do one with a tag matching: ' + matchingTags.join('; '));
+      decreaseWeight();
       QUESTION_INDEX = getRandomQuestion(tagQuestions);
       addNextQuestion(false);
       return;
@@ -331,6 +332,7 @@ title: Database Tutee
     // User wants to skip the question for a random one
     if (random) {
       addTextToChat('Okay, let\'s skip that one right now and do a random one.');
+      decreaseWeight();
       addNextQuestion();
       return;
     }
@@ -338,6 +340,7 @@ title: Database Tutee
     // User wants to skip the question for the next sequential one
     if (skip) {
       addTextToChat('Okay, let\'s skip that one right now for the next sequential one.');
+      decreaseWeight();
       addNextQuestion(false);
       return;
     }
@@ -346,10 +349,10 @@ title: Database Tutee
     if (!negative && positive) {
       if (questions[getCurrentIndex()].value) {
         addTextToChat('That seems right!');
-        decreaseWeight();
+        decreaseWeight(2);
       } else {
         addTextToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
-        increaseWeight();
+        increaseWeight(2);
       }
 
       addNextQuestion();
@@ -360,10 +363,10 @@ title: Database Tutee
     if (negative && !positive) {
       if (!questions[QUESTION_INDEX - 1].value) {
         addTextToChat('Oh, I think you\'re right!');
-        increaseWeight();
+        increaseWeight(2);
       } else {
         addTextToChat('Wait are you sure? I think you have it backwards... Let\'s move on.');
-        decreaseWeight();
+        decreaseWeight(2);
       }
 
       addNextQuestion();
