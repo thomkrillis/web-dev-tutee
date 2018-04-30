@@ -1,24 +1,44 @@
 - text: This should be true.
   value: True
   content: databases
+  tags:
+    - dummy
 - text: This should be false.
   value: False
   content: databases
+  tags:
+    - dummy
 - text: PostgreSQL implements ACID.
   value: True
   content: postgresql
+  tags:
+    - postgresql
+    - acid
 - text: Foreign key constraints do not help with data integrity.
   value: False
   content: foreign-keys
+  tags:
+    - foreign-keys
+    - data-integrity
 - text: MySQL is the most commonly used RDBMS.
   value: True
   content: mysql
+  tags:
+    - mysql
 - text: Relational databases are not a subset of tabular databases.
   value: False
   content: relational
+  tags:
+    - tabular
+    - relational
 - text: Mongo is a relational database.
   value: False
   content: non-relational
+  tags:
+    - mongo
+    - non-relational
 - text: Additional questions should go here.
   value: True
   content: databases
+  tags:
+    - dummy
